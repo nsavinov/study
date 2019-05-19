@@ -86,6 +86,30 @@ class Plus(Op):
         self.y.out_grad += grad_y
 
 
+class SplittingPlus(Op):
+    def __init__(self, x, y):
+        super(SplittingPlus, self).__init__()
+        self.x = x
+        self.y = y
+        self.alpha = 0.01
+        self.prob = 0.5
+    
+    def forward(self):
+        self.out_grad = .0
+        self.x_forward = self.x.out
+        self.out = self.x.out + self.y.out
+        return self.out
+        
+    def backward(self):
+        grad_x = self.out_grad
+        grad_y = self.out_grad
+        if random.random() < self.prob:
+            grad_x -= self.alpha * self.x_forward
+            grad_y += self.alpha * self.x_forward
+        self.x.out_grad += grad_x
+        self.y.out_grad += grad_y
+
+
 class Mult(Op):
     def __init__(self, x, y):
         super(Mult, self).__init__()
@@ -210,7 +234,6 @@ def get_two_layer_mlp():
     # h1 = ReLU(ax1 * x1 + ax2 * x2 + ax) - first hidden
     # h2 = ReLU(bx1 * x1 + bx2 * x2 + bx) - second hidden
     # ah1 * h1 + ah2 * h2 + ah - output
-    activation = ReLU
     x1 = Input()
     x2 = Input()
     ########
@@ -220,8 +243,8 @@ def get_two_layer_mlp():
     ax2x2 = Mult(ax2, x2)
     ax1x1_ax2x2 = Plus(ax1x1, ax2x2)
     ax = Param(get_random_init(True)) #True
-    ax1x1_ax2x2_ax = Plus(ax1x1_ax2x2, ax)
-    h1 = activation(ax1x1_ax2x2_ax)
+    ax1x1_ax2x2_ax = SplittingPlus(ax1x1_ax2x2, ax)
+    h1 = ReLU(ax1x1_ax2x2_ax)
     ########
     bx1 = Param(get_random_init())
     bx1x1 = Mult(bx1, x1)
@@ -229,8 +252,8 @@ def get_two_layer_mlp():
     bx2x2 = Mult(bx2, x2)
     bx1x1_bx2x2 = Plus(bx1x1, bx2x2)
     bx = Param(get_random_init(True)) #True
-    bx1x1_bx2x2_bx = Plus(bx1x1_bx2x2, bx)
-    h2 = activation(bx1x1_bx2x2_bx)
+    bx1x1_bx2x2_bx = SplittingPlus(bx1x1_bx2x2, bx)
+    h2 = ReLU(bx1x1_bx2x2_bx)
     ########
     ah1 = Param(get_random_init())
     ah1h1 = Mult(ah1, h1)
@@ -238,7 +261,7 @@ def get_two_layer_mlp():
     ah2h2 = Mult(ah2, h2)
     ah = Param(get_random_init())
     ah1h1_ah2h2 = Plus(ah1h1, ah2h2)
-    output = Plus(ah1h1_ah2h2, ah)
+    output = SplittingPlus(ah1h1_ah2h2, ah)
     ########
     return ComputationalGraph([x1, x2], output, Op.register.get_nodes())
         
