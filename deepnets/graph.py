@@ -234,6 +234,7 @@ def get_two_layer_mlp():
     # h1 = ReLU(ax1 * x1 + ax2 * x2 + ax) - first hidden
     # h2 = ReLU(bx1 * x1 + bx2 * x2 + bx) - second hidden
     # ah1 * h1 + ah2 * h2 + ah - output
+    plus_op = Plus #SplittingPlus
     x1 = Input()
     x2 = Input()
     ########
@@ -243,7 +244,7 @@ def get_two_layer_mlp():
     ax2x2 = Mult(ax2, x2)
     ax1x1_ax2x2 = Plus(ax1x1, ax2x2)
     ax = Param(get_random_init(True)) #True
-    ax1x1_ax2x2_ax = SplittingPlus(ax1x1_ax2x2, ax)
+    ax1x1_ax2x2_ax = plus_op(ax1x1_ax2x2, ax)
     h1 = ReLU(ax1x1_ax2x2_ax)
     ########
     bx1 = Param(get_random_init())
@@ -252,7 +253,7 @@ def get_two_layer_mlp():
     bx2x2 = Mult(bx2, x2)
     bx1x1_bx2x2 = Plus(bx1x1, bx2x2)
     bx = Param(get_random_init(True)) #True
-    bx1x1_bx2x2_bx = SplittingPlus(bx1x1_bx2x2, bx)
+    bx1x1_bx2x2_bx = plus_op(bx1x1_bx2x2, bx)
     h2 = ReLU(bx1x1_bx2x2_bx)
     ########
     ah1 = Param(get_random_init())
@@ -261,7 +262,7 @@ def get_two_layer_mlp():
     ah2h2 = Mult(ah2, h2)
     ah = Param(get_random_init())
     ah1h1_ah2h2 = Plus(ah1h1, ah2h2)
-    output = SplittingPlus(ah1h1_ah2h2, ah)
+    output = plus_op(ah1h1_ah2h2, ah)
     ########
     return ComputationalGraph([x1, x2], output, Op.register.get_nodes())
         
